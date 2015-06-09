@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'plist', '~> 3.1'
   spec.add_dependency 'faraday', '~> 0.8.9' # 0.8.9 because of shenzhen :(
   spec.add_dependency 'faraday_middleware', '~> 0.9'
+  spec.add_dependency 'mechanize' # Interaction with website 
 
   # Development only
   spec.add_development_dependency 'bundler'
