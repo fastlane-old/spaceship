@@ -79,7 +79,7 @@ module Spaceship
         agent.user_agent_alias = 'Mac Safari'
       }
       a.get(landing_url) do |page|
-        login_page = a.click(page.link_with(text: /Member Center/))
+        login_page = a.click(page.link_with(href: /membercenter/))
         api_key = login_page.forms.first['appIdKey']
         File.write(cache_path, api_key)
         return api_key
