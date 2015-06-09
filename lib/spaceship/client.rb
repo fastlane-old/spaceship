@@ -1,4 +1,5 @@
 require 'faraday' # HTTP Client
+require 'mechanize' # Interaction with website 
 require 'logger'
 require 'faraday_middleware'
 require 'spaceship/ui'
@@ -71,11 +72,15 @@ module Spaceship
       cached = File.read(cache_path) rescue nil
       return cached if cached
 
-      landing_url = "https://developer.apple.com/devcenter/ios/index.action"
+      landing_url = "https://developer.apple.com/ios/"
       logger.info("GET: " + landing_url)
-      page = @client.get(landing_url).body
-      if page =~ %r{<a href="https://idmsa.apple.com/IDMSWebAuth/login\?.*appIdKey=(\h+)}
-        api_key = $1
+
+      a = Mechanize.new { |agent|
+        agent.user_agent_alias = 'Mac Safari'
+      }
+      a.get(landing_url) do |page|
+        login_page = a.click(page.link_with(href: /membercenter/))
+        api_key = login_page.forms.first['appIdKey']
         File.write(cache_path, api_key)
         return api_key
       end
