@@ -15,6 +15,16 @@ module Spaceship
   class Client
     PROTOCOL_VERSION = "QH65B2"
 
+
+
+
+
+
+
+
+
+
+
     attr_reader :client
     attr_accessor :cookie
 
