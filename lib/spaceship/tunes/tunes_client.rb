@@ -1,5 +1,11 @@
 module Spaceship
   class TunesClient < Spaceship::Client
+    def self.init_cache_path
+      path = '/tmp/spaceship_itc_login_url.txt'
+      FileUtils.rm_f path if File.exist? path
+      path
+    end
+    LOGIN_CACHE_PATH = TunesClient.init_cache_path
 
     # ITunesConnectError is only thrown when iTunes Connect raises an exception
     class ITunesConnectError < StandardError
@@ -15,9 +21,8 @@ module Spaceship
 
     # Fetches the latest login URL from iTunes Connect
     def login_url
-      cache_path = "/tmp/spaceship_itc_login_url.txt"
       begin
-        cached = File.read(cache_path)
+        cached = File.read(TunesClient::LOGIN_CACHE_PATH)
       rescue Errno::ENOENT
       end
       return cached if cached
@@ -27,7 +32,7 @@ module Spaceship
         url = host + request(:get, self.class.hostname).body.match(%r{action="(/WebObjects/iTunesConnect.woa/wo/.*)"})[1]
         raise "" unless url.length > 0
 
-        File.write(cache_path, url)
+        File.write(TunesClient::LOGIN_CACHE_PATH, url)
         return url
       rescue => ex
         puts ex
