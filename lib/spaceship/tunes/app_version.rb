@@ -342,16 +342,15 @@ module Spaceship
         if screenshot_path # adding / replacing
           upload_file = UploadFile.from_path screenshot_path
           screenshot_data = client.upload_screenshot(self, upload_file, device)
-          return if screenshot_data["token"] == nil
+
           new_screenshot = {
               "value" => {
                   "assetToken" => screenshot_data["token"],
                   "sortOrder" => sort_order,
+                  "url" => nil,
+                  "thumbNailUrl" => nil,
                   "originalFileName" => upload_file.file_name
-              },
-              "isEditable" => true,
-              "isRequired" => false,
-              "errorKeys" => nil
+              }
           }
           if existing_sort_orders.include?(sort_order) # replace
             device_lang_screenshots[existing_sort_orders.index(sort_order)] = new_screenshot
