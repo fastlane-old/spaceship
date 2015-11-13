@@ -67,7 +67,7 @@ module Spaceship
       }
 
       response = request(:post) do |req|
-        req.url "https://idmsa.apple.com/appleauth/auth/signin"
+        req.url "https://idmsa.apple.com/appleauth/auth/signin?widgetKey=22d448248055bab0dc197c6271d738c3"
         req.body = data.to_json
         req.headers['Content-Type'] = 'application/json'
       end
