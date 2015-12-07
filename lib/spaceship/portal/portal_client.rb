@@ -37,18 +37,24 @@ module Spaceship
         appIdKey: api_key
       })
 
-      if response['Set-Cookie'] =~ /myacinfo=(\w+);/
-        @cookie = "myacinfo=#{$1};"
-        return @client
+      case response.status
+      when 302
+        return response
+      when 200
+        raise InvalidUserCredentialsError.new, "Invalid username and password combination. Used '#{user}' as the username."
       else
         # Something went wrong. Was it invalid credentials or server issue
         if (response.body || "").include?("Your Apple ID or password was entered incorrectly")
           # User Credentials are wrong
           raise InvalidUserCredentialsError.new, "Invalid username and password combination. Used '#{user}' as the username."
+        elsif (response.body || "").include?("Verify your identity")
+          raise "spaceship / fastlane doesn't support 2 step enabled accounts yet. Please temporary disable 2 step verification until spaceship was updated."
         else
           info = [response.body, response['Set-Cookie']]
           raise UnexpectedResponse.new, info.join("\n")
         end
+        info = [response.body, response['Set-Cookie']]
+        raise UnexpectedResponse.new, info.join("\n")
       end
     end
 
@@ -269,6 +275,12 @@ module Spaceship
     end
 
     def create_certificate!(type, csr, app_id = nil)
+      if csrf_tokens.count == 0
+        # If we directly create a new certificate without querying anything before
+        # we don't have a valid csrf token, that's why we have to do at least one request
+        certificates([Certificate::CERTIFICATE_TYPE_IDS.keys.first])
+      end
+
       r = request(:post, 'account/ios/certificate/submitCertificateRequest.action', {
         teamId: team_id,
         type: type,
@@ -287,10 +299,10 @@ module Spaceship
         type: type
       })
       a = parse_response(r)
-      if a.include?("Apple Inc")
+      if r.success? && a.include?("Apple Inc")
         return a
       else
-        raise "Couldn't download provisioning profile, got this instead: #{a}"
+        raise UnexpectedResponse.new, "Couldn't download certificate, got this instead: #{a}"
       end
     end
 
@@ -338,10 +350,10 @@ module Spaceship
         displayId: profile_id
       })
       a = parse_response(r)
-      if a.include?("DOCTYPE plist PUBLIC")
+      if r.success? && a.include?("DOCTYPE plist PUBLIC")
         return a
       else
-        raise "Couldn't download provisioning profile, got this instead: #{a}"
+        raise UnexpectedResponse.new, "Couldn't download provisioning profile, got this instead: #{a}"
       end
     end
 
