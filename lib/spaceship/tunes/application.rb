@@ -139,6 +139,15 @@ module Spaceship
         Tunes::AppDetails.factory(attrs)
       end
 
+      def app_units
+        client.app_units(apple_id)
+      end
+
+      def app_views
+        client.app_views(apple_id)
+      end
+
+
       #####################################################
       # @!group Modifying
       #####################################################
