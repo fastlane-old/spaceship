@@ -590,7 +590,9 @@ module Spaceship
         current['privacyPolicyUrl']['value'] = privacy_policy_url
         current['pageLanguageValue'] = current['language'] # There is no valid reason why we need this, only iTC being iTC
       end
-      build_info['significantChange']['value'] = significant_change
+      if !build_info['significantChange'].nil?
+        build_info['significantChange']['value'] = significant_change
+      end
       build_info['testInfo']['reviewFirstName']['value'] = first_name
       build_info['testInfo']['reviewLastName']['value'] = last_name
       build_info['testInfo']['reviewPhone']['value'] = phone_number
@@ -624,12 +626,15 @@ module Spaceship
       r.body['data']
     end
 
-    def update_encryption_compliance(app_id: nil, train: nil, build_number: nil, encryption_info: nil, encryption: nil)
+    def update_encryption_compliance(app_id: nil, train: nil, build_number: nil, encryption_info: nil, encryption: nil, is_exempt: true, properietary: false, third_party: false)
       return unless encryption_info['exportComplianceRequired']
       # only sometimes this is required
 
       encryption_info['usesEncryption']['value'] = encryption
       encryption_info['encryptionUpdated']['value'] = encryption
+      encryption_info['isExempt']['value'] = is_exempt
+      encryption_info['containsProprietaryCryptography']['value'] = properietary
+      encryption_info['containsThirdPartyCryptography']['value'] = third_party
 
       r = request(:post) do |req|
         req.url "ra/apps/#{app_id}/trains/#{train}/builds/#{build_number}/submit/complete"
