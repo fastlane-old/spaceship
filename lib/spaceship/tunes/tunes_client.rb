@@ -314,10 +314,10 @@ module Spaceship
 
       # We only support platforms that exist ATM
       platform = platforms.find do |p|
-        ['ios', 'osx'].include? p['platformString']
+        ['ios', 'osx', 'appletvos'].include? p['platformString']
       end
 
-      raise "Could not find platform ios or osx for app #{app_id}" unless platform
+      raise "Could not find platform ios, osx or appletvos for app #{app_id}" unless platform
 
       version = platform[(is_live ? 'deliverableVersion' : 'inFlightVersion')]
       return nil unless version
