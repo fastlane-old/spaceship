@@ -126,6 +126,10 @@ module Spaceship
         "https://itunesconnect.apple.com/WebObjects/iTunesConnect.woa/ra/ng/app/#{self.apple_id}"
       end
 
+      def analytics
+        Spaceship::Tunes::AppAnalytics.factory({ 'adamId' => self.apple_id })
+      end
+
       # @return (Hash) Contains the reason for rejection.
       #  if everything is alright, the result will be
       #  `{"sectionErrorKeys"=>[], "sectionInfoKeys"=>[], "sectionWarningKeys"=>[], "replyConstraints"=>{"minLength"=>1, "maxLength"=>4000}, "appNotes"=>{"threads"=>[]}, "betaNotes"=>{"threads"=>[]}, "appMessages"=>{"threads"=>[]}}`
@@ -138,15 +142,6 @@ module Spaceship
         attrs.merge!(application: self)
         Tunes::AppDetails.factory(attrs)
       end
-
-      def app_units
-        client.app_units(apple_id)
-      end
-
-      def app_views
-        client.app_views(apple_id)
-      end
-
 
       #####################################################
       # @!group Modifying
@@ -215,7 +210,21 @@ module Spaceship
           Tunes::ProcessingBuild.factory(attrs)
         end
 
-        builds.delete_if { |a| a.state == "ITC.apps.betaProcessingStatus.InvalidBinary" }
+        builds.delete_if { |a| a.state.include?("invalidBinary") }
+
+        builds
+      end
+
+      # @return [Array]A list of binaries which are in the invalid state
+      def invalid_builds
+        data = client.build_trains(apple_id, 'internal') # we need to fetch all trains here to get the builds
+
+        builds = data.fetch('processingBuilds', []).collect do |attrs|
+          attrs.merge!(build_train: self)
+          Tunes::ProcessingBuild.factory(attrs)
+        end
+
+        builds.delete_if { |a| !a.state.include?("invalidBinary") }
 
         builds
       end

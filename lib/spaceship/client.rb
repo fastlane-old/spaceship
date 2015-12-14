@@ -6,6 +6,8 @@ require 'spaceship/ui'
 require 'spaceship/helper/plist_middleware'
 require 'spaceship/helper/net_http_generic_request'
 
+Faraday::Utils.default_params_encoder = Faraday::FlatParamsEncoder
+
 if ENV["DEBUG"]
   require 'openssl'
   # this has to be on top of this file, since the value can't be changed later
@@ -64,11 +66,12 @@ module Spaceship
     end
 
     def initialize
+      @cookie = HTTP::CookieJar.new
       @client = Faraday.new(self.class.hostname) do |c|
         c.response :json, content_type: /\bjson$/
         c.response :xml, content_type: /\bxml$/
         c.response :plist, content_type: /\bplist$/
-        c.use :cookie_jar
+        c.use :cookie_jar, jar: @cookie
         c.adapter Faraday.default_adapter
 
         if ENV['DEBUG']
@@ -84,7 +87,7 @@ module Spaceship
     # /tmp/spaceship[time].log by default
     def logger
       unless @logger
-        if $verbose || ENV["VERBOSE"]
+        if ENV["VERBOSE"]
           @logger = Logger.new(STDOUT)
         else
           # Log to file by default
@@ -98,6 +101,14 @@ module Spaceship
       end
 
       @logger
+    end
+
+    ##
+    # Return the session cookie.
+    #
+    # @return (String) the cookie-string in the RFC6265 format: https://tools.ietf.org/html/rfc6265#section-4.2.1
+    def cookie
+      @cookie.map(&:to_s).join(';')
     end
 
     #####################################################
@@ -247,10 +258,10 @@ module Spaceship
     end
 
     def parse_response(response, expected_key = nil)
-      if expected_key
-        content = response.body[expected_key]
-      else
-        content = response.body
+      if response.body
+        # If we have an `expected_key`, select that from response.body Hash
+        # Else, don't.
+        content = expected_key ? response.body[expected_key] : response.body
       end
 
       if content.nil?

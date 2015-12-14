@@ -344,44 +344,6 @@ module Spaceship
     #####################################################
     # @!group AppAnalytics
     #####################################################
-    def time_last_7_days
-      time = Time.now
-      past = time - (60 * 60 * 24 * 7)
-      end_t   = time.strftime("%Y-%m-%dT00:00:00Z")
-      start_t = past.strftime("%Y-%m-%dT00:00:00Z")
-
-      return start_t, end_t
-    end
-
-    def time_last_30_days
-      time = Time.now
-      past = time - (60 * 60 * 24 * 30)
-      end_t   = time.strftime("%Y-%m-%dT00:00:00Z")
-      start_t = past.strftime("%Y-%m-%dT00:00:00Z")
-
-      return start_t, end_t
-    end
-
-    def time_last_90_days
-      time = Time.now
-      past = time - (60 * 60 * 24 * 90)
-      end_t   = time.strftime("%Y-%m-%dT00:00:00Z")
-      start_t = past.strftime("%Y-%m-%dT00:00:00Z")
-
-      return start_t, end_t
-    end
-
-    def app_views(app_id)
-      start_t, end_t = time_last_7_days
-
-      time_series_analytics([app_id], ['pageViewCount'], start_t, end_t, "DAY")
-    end
-
-    def app_units(app_id)
-      start_t, end_t = time_last_7_days
-
-      time_series_analytics([app_id], ['units'], start_t, end_t, "DAY")
-    end
 
     def time_series_analytics(app_ids, measures, start_time, end_time, frequency)
       data = {
