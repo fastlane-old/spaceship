@@ -590,7 +590,7 @@ module Spaceship
         current['privacyPolicyUrl']['value'] = privacy_policy_url
         current['pageLanguageValue'] = current['language'] # There is no valid reason why we need this, only iTC being iTC
       end
-      if !build_info['significantChange'].nil?
+      unless build_info['significantChange'].nil?
         build_info['significantChange']['value'] = significant_change
       end
       build_info['testInfo']['reviewFirstName']['value'] = first_name
