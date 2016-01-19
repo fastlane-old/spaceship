@@ -314,10 +314,16 @@ module Spaceship
 
       # We only support platforms that exist ATM
       platform = platforms.find do |p|
-        ['ios', 'osx'].include? p['platformString']
+        ['ios', 'osx', 'appletvos'].include? p['platformString']
       end
 
-      raise "Could not find platform ios or osx for app #{app_id}" unless platform
+      raise "Could not find platform ios, osx or appletvos for app #{app_id}" unless platform
+
+      # If your app has versions for both iOS and tvOS we will default to returning the iOS version for now.
+      # This is intentional as we need to do more work to support apps that have hybrid versions.
+      if platforms.length > 1
+        platform = platforms.detect { |p| p['platformString'] == "ios" }
+      end
 
       version = platform[(is_live ? 'deliverableVersion' : 'inFlightVersion')]
       return nil unless version
@@ -590,9 +596,8 @@ module Spaceship
         current['privacyPolicyUrl']['value'] = privacy_policy_url
         current['pageLanguageValue'] = current['language'] # There is no valid reason why we need this, only iTC being iTC
       end
-      unless build_info['significantChange'].nil?
-        build_info['significantChange']['value'] = significant_change
-      end
+      build_info['significantChange'] ||= {}
+      build_info['significantChange']['value'] = significant_change
       build_info['testInfo']['reviewFirstName']['value'] = first_name
       build_info['testInfo']['reviewLastName']['value'] = last_name
       build_info['testInfo']['reviewPhone']['value'] = phone_number
@@ -631,6 +636,7 @@ module Spaceship
       # only sometimes this is required
 
       encryption_info['usesEncryption']['value'] = encryption
+      encryption_info['encryptionUpdated'] ||= {}
       encryption_info['encryptionUpdated']['value'] = encryption
       encryption_info['isExempt']['value'] = is_exempt
       encryption_info['containsProprietaryCryptography']['value'] = proprietary
@@ -707,10 +713,10 @@ module Spaceship
               value: email
             },
             firstName: {
-              value: first_name
+              value: first_name || ""
             },
             lastName: {
-              value: last_name
+              value: last_name || ""
             },
             testing: {
               value: true

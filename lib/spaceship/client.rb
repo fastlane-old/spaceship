@@ -6,6 +6,8 @@ require 'spaceship/ui'
 require 'spaceship/helper/plist_middleware'
 require 'spaceship/helper/net_http_generic_request'
 
+Faraday::Utils.default_params_encoder = Faraday::FlatParamsEncoder
+
 if ENV["DEBUG"]
   require 'openssl'
   # this has to be on top of this file, since the value can't be changed later
@@ -256,10 +258,10 @@ module Spaceship
     end
 
     def parse_response(response, expected_key = nil)
-      if expected_key
-        content = response.body[expected_key]
-      else
-        content = response.body
+      if response.body
+        # If we have an `expected_key`, select that from response.body Hash
+        # Else, don't.
+        content = expected_key ? response.body[expected_key] : response.body
       end
 
       if content.nil?

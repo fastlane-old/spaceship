@@ -100,7 +100,7 @@ module Spaceship
       # @return (Spaceship::AppVersion) Receive the version that is currently live on the
       #  App Store. You can't modify all values there, so be careful.
       def live_version
-        if raw_data['versions'].count == 1
+        if (raw_data['versions'] || []).count == 1
           v = raw_data['versions'].last
           if ['Prepare for Upload', 'prepareForUpload'].include?(v['state']) # this only applies for the initial version
             return nil
@@ -206,7 +206,21 @@ module Spaceship
           Tunes::ProcessingBuild.factory(attrs)
         end
 
-        builds.delete_if { |a| a.state == "ITC.apps.betaProcessingStatus.InvalidBinary" }
+        builds.delete_if { |a| a.state.include?("invalidBinary") }
+
+        builds
+      end
+
+      # @return [Array]A list of binaries which are in the invalid state
+      def invalid_builds
+        data = client.build_trains(apple_id, 'internal') # we need to fetch all trains here to get the builds
+
+        builds = data.fetch('processingBuilds', []).collect do |attrs|
+          attrs.merge!(build_train: self)
+          Tunes::ProcessingBuild.factory(attrs)
+        end
+
+        builds.delete_if { |a| !a.state.include?("invalidBinary") }
 
         builds
       end
