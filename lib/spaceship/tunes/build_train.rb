@@ -101,7 +101,7 @@ module Spaceship
               next if b["#{testing_type}Testing"].nil?
               next if build.nil?
               next if b["buildVersion"] != build.build_version
-              
+
               b["#{testing_type}Testing"]['value'] = false
               b["#{testing_type}Testing"]['value'] = new_value
             end
