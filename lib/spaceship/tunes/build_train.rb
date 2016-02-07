@@ -107,18 +107,6 @@ module Spaceship
             end
 
             false
-
-        data['trains'].each do |train|
-          train["#{testing_type}Testing"]['value'] = false
-          train["#{testing_type}Testing"]['value'] = new_value if train['versionString'] == version_string
-
-          # find correct build
-          train['builds'].select! { |b| !b["#{testing_type}Testing"].nil? && !build.nil? && b['buildVersion'] == build.build_version }
-
-          # also update the build if it was found
-          train['builds'].each do |b|
-            b["#{testing_type}Testing"]['value'] = false
-            b["#{testing_type}Testing"]['value'] = new_value if b['trainVersion'] == version_string
           end
         end
 
