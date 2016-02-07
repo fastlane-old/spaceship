@@ -139,6 +139,13 @@ module Spaceship
         Tunes::AppDetails.factory(attrs)
       end
 
+      # Lists all the reviews for a specifc store front
+      # @param store_front (StoreFront): The ISO 3166-1 Alpha-2 country code or "all" to get all the reviews
+      def reviews(platform="ios", store_front="US")
+        data = client.reviews(apple_id, platform, store_front)
+        data.map { |review| Spaceship::Tunes::AppReview.factory(review) }
+      end
+
       #####################################################
       # @!group Modifying
       #####################################################
