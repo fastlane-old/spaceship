@@ -74,12 +74,21 @@ module Spaceship
           self.new(attrs)
         end
 
+        # @deprecated
         # @param mac [Bool] Fetches Mac apps if true
         # @return (Array) Returns all apps available for this account
         def all(mac: false)
-          client.apps(mac: mac).map { |app| self.factory(app) }
+          all(platform: mac ? 'mac' : 'ios')
         end
 
+        # @param platform (String) The platform to fer
+        # @return (Array) Returns all apps available for this account
+        def all(platform: false)
+          client.apps(platform: platform).map { |app| self.factory(app) }
+        end
+
+        # @deprecated
+        #
         # Creates a new App ID on the Apple Dev Portal
         #
         # if bundle_id ends with '*' then it is a wildcard id otherwise, it is an explicit id
@@ -88,21 +97,41 @@ module Spaceship
         # @param mac [Bool] is this a Mac app?
         # @return (App) The app you just created
         def create!(bundle_id: nil, name: nil, mac: false)
+          create!(bundle_id, name, platform: mac ? 'mac' : 'ios')
+        end
+
+        # Creates a new App ID on the Apple Dev Portal
+        #
+        # if bundle_id ends with '*' then it is a wildcard id otherwise, it is an explicit id
+        # @param bundle_id [String] the bundle id (app_identifier) of the app associated with this provisioning profile
+        # @param name [String] the name of the App
+        # @param platform [String] The platform
+        # @return (App) The app you just created
+        def create!(bundle_id: nil, name: nil, platform: 'ios')
           if bundle_id.end_with?('*')
             type = :wildcard
           else
             type = :explicit
           end
 
-          new_app = client.create_app!(type, name, bundle_id, mac: mac)
+          new_app = client.create_app!(type, name, bundle_id, platform: platform)
           self.new(new_app)
         end
 
+        # @deprecated
+        #
         # Find a specific App ID based on the bundle_id
         # @param mac [Bool] Searches Mac apps if true
         # @return (App) The app you're looking for. This is nil if the app can't be found.
         def find(bundle_id, mac: false)
-          all(mac: mac).find do |app|
+          find(bundle_id, platform: mac ? 'mac' : 'ios')
+        end
+
+        # Find a specific App ID based on the bundle_id
+        # @param platform [String] The platform to search for
+        # @return (App) The app you're looking for. This is nil if the app can't be found.
+        def find(bundle_id, platform: 'ios')
+          all(platform: platform).find do |app|
             app.bundle_id == bundle_id
           end
         end
@@ -112,7 +141,7 @@ module Spaceship
       # or there are active profiles
       # @return (App) The app you just deletd
       def delete!
-        client.delete_app!(app_id, mac: mac?)
+        client.delete_app!(app_id, platform: platform)
         self
       end
 

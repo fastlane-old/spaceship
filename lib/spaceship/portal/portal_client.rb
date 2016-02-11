@@ -96,12 +96,12 @@ module Spaceship
       @in_house = (team_information['type'] == 'In-House')
     end
 
-    def platform_slug(mac)
-      if mac
-        'mac'
-      else
-        'ios'
+    def platform_slug(platform)
+      if platform == 'mac'
+        return 'mac'
       end
+
+      'ios'
     end
     private :platform_slug
 
@@ -109,9 +109,9 @@ module Spaceship
     # @!group Apps
     #####################################################
 
-    def apps(mac: false)
+    def apps(platform: 'ios')
       paging do |page_number|
-        r = request(:post, "account/#{platform_slug(mac)}/identifiers/listAppIds.action", {
+        r = request(:post, "account/#{platform_slug(platform)}/identifiers/listAppIds.action", {
           teamId: team_id,
           pageNumber: page_number,
           pageSize: page_size,
@@ -122,7 +122,7 @@ module Spaceship
     end
 
     def details_for_app(app)
-      r = request(:post, "account/#{platform_slug(app.mac?)}/identifiers/getAppIdDetail.action", {
+      r = request(:post, "account/#{platform_slug(app.platform)}/identifiers/getAppIdDetail.action", {
         teamId: team_id,
         appIdId: app.app_id
       })
@@ -151,7 +151,7 @@ module Spaceship
       details_for_app(app)
     end
 
-    def create_app!(type, name, bundle_id, mac: false)
+    def create_app!(type, name, bundle_id, platform: 'ios')
       ident_params = case type.to_sym
                      when :explicit
                        {
@@ -183,12 +183,12 @@ module Spaceship
         apps
       end
 
-      r = request(:post, "account/#{platform_slug(mac)}/identifiers/addAppId.action", params)
+      r = request(:post, "account/#{platform_slug(platform)}/identifiers/addAppId.action", params)
       parse_response(r, 'appId')
     end
 
-    def delete_app!(app_id, mac: false)
-      r = request(:post, "account/#{platform_slug(mac)}/identifiers/deleteAppId.action", {
+    def delete_app!(app_id, platform: 'ios')
+      r = request(:post, "account/#{platform_slug(platform)}/identifiers/deleteAppId.action", {
         teamId: team_id,
         appIdId: app_id
       })
@@ -232,9 +232,9 @@ module Spaceship
     # @!group Devices
     #####################################################
 
-    def devices(mac: false)
+    def devices(platform: 'ios')
       paging do |page_number|
-        r = request(:post, "account/#{platform_slug(mac)}/device/listDevices.action", {
+        r = request(:post, "account/#{platform_slug(platform)}/device/listDevices.action", {
           teamId: team_id,
           pageNumber: page_number,
           pageSize: page_size,
@@ -257,9 +257,9 @@ module Spaceship
       end
     end
 
-    def create_device!(device_name, device_id, mac: false)
+    def create_device!(device_name, device_id, platform: 'ios')
       req = request(:post) do |r|
-        r.url "https://developerservices2.apple.com/services/#{PROTOCOL_VERSION}/#{platform_slug(mac)}/addDevice.action"
+        r.url "https://developerservices2.apple.com/services/#{PROTOCOL_VERSION}/#{platform_slug(platform)}/addDevice.action"
         r.params = {
           teamId: team_id,
           deviceNumber: device_id,
@@ -274,9 +274,9 @@ module Spaceship
     # @!group Certificates
     #####################################################
 
-    def certificates(types, mac: false)
+    def certificates(types, platform: 'ios')
       paging do |page_number|
-        r = request(:post, "account/#{platform_slug(mac)}/certificate/listCertRequests.action", {
+        r = request(:post, "account/#{platform_slug(platform)}/certificate/listCertRequests.action", {
           teamId: team_id,
           types: types.join(','),
           pageNumber: page_number,
@@ -303,10 +303,10 @@ module Spaceship
       parse_response(r, 'certRequest')
     end
 
-    def download_certificate(certificate_id, type, mac: false)
+    def download_certificate(certificate_id, type, platform: 'ios')
       { type: type, certificate_id: certificate_id }.each { |k, v| raise "#{k} must not be nil" if v.nil? }
 
-      r = request(:post, "https://developer.apple.com/account/#{platform_slug(mac)}/certificate/certificateContentDownload.action", {
+      r = request(:post, "https://developer.apple.com/account/#{platform_slug(platform)}/certificate/certificateContentDownload.action", {
         teamId: team_id,
         displayId: certificate_id,
         type: type
@@ -319,8 +319,8 @@ module Spaceship
       end
     end
 
-    def revoke_certificate!(certificate_id, type, mac: false)
-      r = request(:post, "account/#{platform_slug(mac)}/certificate/revokeCertificate.action", {
+    def revoke_certificate!(certificate_id, type, platform: 'ios')
+      r = request(:post, "account/#{platform_slug(platform)}/certificate/revokeCertificate.action", {
         teamId: team_id,
         certificateId: certificate_id,
         type: type
@@ -332,9 +332,9 @@ module Spaceship
     # @!group Provisioning Profiles
     #####################################################
 
-    def provisioning_profiles(mac: false)
+    def provisioning_profiles(platform: 'ios')
       req = request(:post) do |r|
-        r.url "https://developerservices2.apple.com/services/#{PROTOCOL_VERSION}/#{platform_slug(mac)}/listProvisioningProfiles.action"
+        r.url "https://developerservices2.apple.com/services/#{PROTOCOL_VERSION}/#{platform_slug(platform)}/listProvisioningProfiles.action"
         r.params = {
           teamId: team_id,
           includeInactiveProfiles: true,
@@ -345,26 +345,30 @@ module Spaceship
       parse_response(req, 'provisioningProfiles')
     end
 
-    def create_provisioning_profile!(name, distribution_method, app_id, certificate_ids, device_ids, mac: false)
+    def create_provisioning_profile!(name, distribution_method, app_id, certificate_ids, device_ids, platform: 'ios', sub_platform: nil)
       if csrf_tokens.count == 0
         # If we directly create a new profile without querying anything before
         # we don't have a valid csrf token, that's why we have to do at least one request
         provisioning_profiles
       end
 
-      r = request(:post, "account/#{platform_slug(mac)}/profile/createProvisioningProfile.action", {
-        teamId: team_id,
-        provisioningProfileName: name,
-        appIdId: app_id,
-        distributionType: distribution_method,
-        certificateIds: certificate_ids,
-        deviceIds: device_ids
-      })
+      params =  {
+          teamId: team_id,
+          provisioningProfileName: name,
+          appIdId: app_id,
+          distributionType: distribution_method,
+          certificateIds: certificate_ids,
+          deviceIds: device_ids
+      }
+
+      params[:subPlatform] = sub_platform unless sub_platform.nil?
+
+      r = request(:post, "account/#{platform_slug(platform)}/profile/createProvisioningProfile.action", params)
       parse_response(r, 'provisioningProfile')
     end
 
-    def download_provisioning_profile(profile_id, mac: false)
-      r = request(:get, "https://developer.apple.com/account/#{platform_slug(mac)}/profile/profileContentDownload.action", {
+    def download_provisioning_profile(profile_id, platform: 'ios')
+      r = request(:get, "https://developer.apple.com/account/#{platform_slug(platform)}/profile/profileContentDownload.action", {
         teamId: team_id,
         displayId: profile_id
       })
@@ -376,31 +380,31 @@ module Spaceship
       end
     end
 
-    def delete_provisioning_profile!(profile_id, mac: false)
+    def delete_provisioning_profile!(profile_id, platform: 'ios')
       if csrf_tokens.count == 0
-        r = request(:post, "account/#{platform_slug(mac)}/profile/getProvisioningProfile.action", {
+        r = request(:post, "account/#{platform_slug(platform)}/profile/getProvisioningProfile.action", {
           teamId: team_id,
           provisioningProfileId: profile_id
         })
         parse_response(r)
       end
 
-      r = request(:post, "account/#{platform_slug(mac)}/profile/deleteProvisioningProfile.action", {
+      r = request(:post, "account/#{platform_slug(platform)}/profile/deleteProvisioningProfile.action", {
         teamId: team_id,
         provisioningProfileId: profile_id
       })
       parse_response(r)
     end
 
-    def repair_provisioning_profile!(profile_id, name, distribution_method, app_id, certificate_ids, device_ids, mac: false)
-      r = request(:post, "account/#{platform_slug(mac)}/profile/regenProvisioningProfile.action", {
+    def repair_provisioning_profile!(profile_id, name, distribution_method, app_id, certificate_ids, device_ids, platform: 'ios', sub_platform: nil)
+      r = request(:post, "account/#{platform_slug(platform)}/profile/regenProvisioningProfile.action", {
         teamId: team_id,
         provisioningProfileId: profile_id,
         provisioningProfileName: name,
         appIdId: app_id,
         distributionType: distribution_method,
         certificateIds: certificate_ids.join(','),
-        deviceIds: device_ids
+        deviceIds: device_ids, subPlatform: sub_platform
       })
 
       parse_response(r, 'provisioningProfile')
