@@ -238,6 +238,8 @@ module Spaceship
               # For Development and AdHoc we usually want all compatible devices by default
               if platform == 'mac'
                 devices = Spaceship::Device.all_macs
+              elsif platform == 'ios' and !sub_platform.nil? and sub_platform.downcase == 'tvos'
+                devices = Spaceship::Device.all_apple_tvs
               else
                 devices = Spaceship::Device.all_for_profile_type(self.type)
               end
