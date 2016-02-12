@@ -59,9 +59,14 @@ module Spaceship
       attr_accessor :version
 
       # @return (String) The supported platform for this profile
-      # @example
+      # @example iOS
       #   "ios"
       attr_accessor :platform
+
+      # @return (String) The supported platform for this profile
+      # @example tvOS
+      #   "tvOS"
+      attr_accessor :sub_platform
 
       # No information about this attribute
       attr_accessor :managing_app
@@ -183,6 +188,7 @@ module Spaceship
           name.split('::').last
         end
 
+        # @deprecated
         # Create a new provisioning profile
         # @param name (String): The name of the provisioning profile on the Dev Portal
         # @param bundle_id (String): The app identifier, this paramter is required
@@ -195,10 +201,25 @@ module Spaceship
         # @param mac (Bool) (optional): Pass true if you're making a Mac provisioning profile
         # @return (ProvisioningProfile): The profile that was just created
         def create!(name: nil, bundle_id: nil, certificate: nil, devices: [], mac: false)
+          create!(name, bundle_id, certificate, devices, platform: mac ? 'mac' : 'ios')
+        end
+
+        # Create a new provisioning profile
+        # @param name (String): The name of the provisioning profile on the Dev Portal
+        # @param bundle_id (String): The app identifier, this paramter is required
+        # @param certificate (Certificate): The certificate that should be used with this
+        #   provisioning profile. You can also pass an array of certificates to this method. This will
+        #   only work for development profiles
+        # @param devices (Array) (optional): An array of Device objects that should be used in this profile.
+        #  It is recommend to not pass devices as spaceship will automatically add all devices for AdHoc
+        #  and Development profiles and add none for AppStore and Enterprise Profiles
+        # @param platform (String) (optional): The platform that we are creating for
+        # @return (ProvisioningProfile): The profile that was just created
+        def create!(name: nil, bundle_id: nil, certificate: nil, devices: [], platform: 'ios', sub_platform: nil)
           raise "Missing required parameter 'bundle_id'" if bundle_id.to_s.empty?
           raise "Missing required parameter 'certificate'. e.g. use `Spaceship::Certificate::Production.all.first`" if certificate.to_s.empty?
 
-          app = Spaceship::App.find(bundle_id, mac: mac)
+          app = Spaceship::App.find(bundle_id, platform: platform)
           raise "Could not find app with bundle id '#{bundle_id}'" unless app
 
           # Fill in sensible default values
@@ -215,8 +236,10 @@ module Spaceship
           if devices.nil? or devices.count == 0
             if self == Development or self == AdHoc
               # For Development and AdHoc we usually want all compatible devices by default
-              if mac
+              if platform == 'mac'
                 devices = Spaceship::Device.all_macs
+              elsif platform == 'ios' and !sub_platform.nil? and sub_platform.downcase == 'tvos'
+                devices = Spaceship::Device.all_apple_tvs
               else
                 devices = Spaceship::Device.all_for_profile_type(self.type)
               end
@@ -229,17 +252,26 @@ module Spaceship
                                                 app.app_id,
                                                 certificate_parameter,
                                                 devices.map(&:id),
-                                                mac: mac)
+                                                platform: platform,
+                                                sub_platform: sub_platform)
           end
 
           self.new(profile)
         end
 
+        # @deprecated
         # @return (Array) Returns all profiles registered for this account
         #  If you're calling this from a subclass (like AdHoc), this will
         #  only return the profiles that are of this type
         def all(mac: false)
-          profiles = client.provisioning_profiles(mac: mac).map do |profile|
+          all(platform: mac ? 'mac' : 'ios')
+        end
+
+        # @return (Array) Returns all profiles registered for this account
+        #  If you're calling this from a subclass (like AdHoc), this will
+        #  only return the profiles that are of this type
+        def all(platform: 'ios')
+          profiles = client.provisioning_profiles(platform: platform).map do |profile|
             self.factory(profile)
           end
 
@@ -254,12 +286,21 @@ module Spaceship
           end
         end
 
+        # @deprecated
         # @return (Array) Returns an array of provisioning
         #   profiles matching the bundle identifier
         #   Returns [] if no profiles were found
         #   This may also contain invalid or expired profiles
         def find_by_bundle_id(bundle_id, mac: false)
-          all(mac: mac).find_all do |profile|
+          find_by_bundle_id(bundle_id, platform: mac ? 'mac' : 'ios')
+        end
+
+        # @return (Array) Returns an array of provisioning
+        #   profiles matching the bundle identifier
+        #   Returns [] if no profiles were found
+        #   This may also contain invalid or expired profiles
+        def find_by_bundle_id(bundle_id, platform: 'ios')
+          all(platform: platform).find_all do |profile|
             profile.app.bundle_id == bundle_id
           end
         end
@@ -301,12 +342,12 @@ module Spaceship
       # @example
       #  File.write("path.mobileprovision", profile.download)
       def download
-        client.download_provisioning_profile(self.id, mac: mac?)
+        client.download_provisioning_profile(self.id, platform: platform)
       end
 
       # Delete the provisioning profile
       def delete!
-        client.delete_provisioning_profile!(self.id, mac: mac?)
+        client.delete_provisioning_profile!(self.id, platform: platform)
       end
 
       # Repair an existing provisioning profile
@@ -349,12 +390,13 @@ module Spaceship
             app.app_id,
             certificates.map(&:id),
             devices.map(&:id),
-            mac: mac?
+            platform: platform,
+            sub_platform: sub_platform
           )
         end
 
         # We need to fetch the provisioning profile again, as the ID changes
-        profile = Spaceship::ProvisioningProfile.all(mac: mac?).find do |p|
+        profile = Spaceship::ProvisioningProfile.all(platform: platform).find do |p|
           p.name == self.name # we can use the name as it's valid
         end
 
@@ -366,7 +408,7 @@ module Spaceship
       def certificate_valid?
         return false if (certificates || []).count == 0
         certificates.each do |c|
-          if Spaceship::Certificate.all(mac: mac?).collect(&:id).include?(c.id)
+          if Spaceship::Certificate.all(platform: platform).collect(&:id).include?(c.id)
             return true
           end
         end
