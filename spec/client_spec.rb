@@ -97,7 +97,7 @@ describe Spaceship::Client do
     end
   end
 
-  describe "SSL ciphers" do
+  describe "SSL ciphers", run_on_ci: false do
     class SSLValidatorClient < Spaceship::Client
       def self.hostname
         "https://www.howsmyssl.com"

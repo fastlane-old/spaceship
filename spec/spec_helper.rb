@@ -43,6 +43,18 @@ def try_delete(path)
   FileUtils.rm_f path if File.exist? path
 end
 
+# still missing the fastlane_core dependency
+class Helper
+  # @return [boolean] true if building in a known CI environment
+  def self.ci?
+    # Check for Jenkins, Travis CI, ... environment variables
+    ['JENKINS_URL', 'TRAVIS', 'CIRCLECI', 'CI', 'TEAMCITY_VERSION', 'GO_PIPELINE_NAME', 'bamboo_buildKey', 'GITLAB_CI'].each do |current|
+      return true if ENV.key?(current)
+    end
+    return false
+  end
+end
+
 RSpec.configure do |config|
   config.before(:each) do
     cache_paths.each { |path| try_delete path }
@@ -51,4 +63,6 @@ RSpec.configure do |config|
   config.after(:each) do
     cache_paths.each { |path| try_delete path }
   end
+
+  config.filter_run_excluding run_on_ci: !Helper.ci?
 end
