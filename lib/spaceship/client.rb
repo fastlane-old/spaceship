@@ -205,12 +205,10 @@ module Spaceship
         do_login(self.user, @password) if @loggedin
       end
 
-      unless tries.zero?
-        sleep(3) unless defined?(SpecHelper)
-        with_retry(tries - 1, &block)
-      else
-        raise last_exception
-      end
+      raise last_exception if tries.zero?
+
+      sleep(3) unless defined?(SpecHelper)
+      with_retry(tries - 1, &block)
     end
 
     private
