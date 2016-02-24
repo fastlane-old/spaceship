@@ -193,7 +193,7 @@ module Spaceship
 
     def with_retry(tries = 5, &block)
       begin
-        return block.call
+        return yield
 
       rescue Faraday::Error::ConnectionFailed, Faraday::Error::TimeoutError, AppleTimeoutError => ex
         last_exception = ex
