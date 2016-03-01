@@ -418,6 +418,33 @@ module Spaceship
     end
 
     #####################################################
+    # @!group Reviews
+    #####################################################
+    # Lists all the reviews for a specifc store front
+    # @param app_id (AppId): The id of your app
+    # @param platform (Platform): The pltform e.g. ios
+    # @param store_front (StoreFront): The ISO 3166-1 Alpha-2 country code or "all" to get all the reviews
+    # @return [JSON] the reviews
+    # [{
+    #     "id": 1328000803,
+    #     "rating": 5,
+    #     "title": "So great, much nice",
+    #     "review": "Great app, works well and looks nice!",
+    #     "created": 1454878180000,
+    #     "nickname": "odge_doge",
+    #     "storeFront": "US"
+    # }, {
+    # ...
+    def reviews(app_id, platform, store_front)
+      raise "app_id is required" unless app_id
+      raise "platform is required" unless platform
+      raise "store_front is required" unless store_front
+
+      r = request(:get, "ra/apps/#{app_id}/reviews?platform=#{platform}&storefront=#{store_front}")
+      parse_response(r, 'data')["reviews"]
+    end
+
+    #####################################################
     # @!group App Icons
     #####################################################
     # Uploads a large icon
