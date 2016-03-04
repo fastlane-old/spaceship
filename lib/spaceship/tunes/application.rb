@@ -113,6 +113,10 @@ module Spaceship
         "https://itunesconnect.apple.com/WebObjects/iTunesConnect.woa/ra/ng/app/#{self.apple_id}"
       end
 
+      def analytics
+        Spaceship::Tunes::AppAnalytics.new(apple_id: self.apple_id)
+      end
+
       # @return (Hash) Contains the reason for rejection.
       #  if everything is alright, the result will be
       #  `{"sectionErrorKeys"=>[], "sectionInfoKeys"=>[], "sectionWarningKeys"=>[], "replyConstraints"=>{"minLength"=>1, "maxLength"=>4000}, "appNotes"=>{"threads"=>[]}, "betaNotes"=>{"threads"=>[]}, "appMessages"=>{"threads"=>[]}}`
