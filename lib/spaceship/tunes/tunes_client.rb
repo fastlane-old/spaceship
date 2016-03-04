@@ -714,7 +714,7 @@ module Spaceship
 
       # ra/apps/1039164429/version/submit/complete
       r = request(:post) do |req|
-        req.url "ra/apps/#{app_id}/version/submit/complete"
+        req.url "ra/apps/#{app_id}/versions/#{version}/submit/complete"
         req.body = data.to_json
         req.headers['Content-Type'] = 'application/json'
       end
