@@ -8,8 +8,11 @@ require 'spaceship/helper/net_http_generic_request'
 
 Faraday::Utils.default_params_encoder = Faraday::FlatParamsEncoder
 
+require 'openssl'
+OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ciphers] = '!ADH:!RC4:!aNULL:!MD5:!EXPORT:!SSLv2:HIGH'
+OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ssl_version] = 'TLSv1_2'
+
 if ENV["DEBUG"]
-  require 'openssl'
   # this has to be on top of this file, since the value can't be changed later
   OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 end
