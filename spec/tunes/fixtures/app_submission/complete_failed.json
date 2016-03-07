@@ -1,9 +1,0 @@
-{
-    "data": null,
-    "messages": {
-        "error": ["Problem processing review submission."],
-        "info": null,
-        "warn": null
-    },
-    "statusCode": "SUCCESS"
- }
